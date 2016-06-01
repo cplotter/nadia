@@ -8,10 +8,10 @@ defmodule Nadia.API do
   @default_timeout 5
   @base_url "https://api.telegram.org/bot"
 
-  defp token, do: Application.get_env(:nadia, :token)
+  defp default_token, do: Application.get_env(:nadia, :token)
   defp recv_timeout, do: Application.get_env(:nadia, :recv_timeout, @default_timeout)
 
-  defp build_url(method), do: @base_url <> token <> "/" <> method
+  defp build_url(method, token), do: @base_url <> token <> "/" <> method
 
   defp process_response(response, method) do
     case decode_response(response) do
@@ -38,14 +38,21 @@ defmodule Nadia.API do
   end
 
   defp build_request(params, file_field) do
-    params = params
-    |> Keyword.update(:reply_markup, nil, &(Poison.encode!(&1)))
-    |> Enum.filter_map(fn {_, v} -> v end, fn {k, v} -> {k, to_string(v)} end)
     if !is_nil(file_field) and File.exists?(params[file_field]) do
       build_multipart_request(params, file_field)
     else
       {:form, params}
     end
+  end
+
+  defp filter_params(params) do
+    params = params
+    |> Keyword.update(:reply_markup, nil, &(Poison.encode!(&1)))
+    |> Enum.filter_map(fn {k, v} -> k != :telegram_bot_token && v end, fn {k, v} -> {k, to_string(v) } end)
+
+    token = Keyword.get(params, :telegram_bot_token, default_token)
+
+    {token, params}
   end
 
   @doc """
@@ -58,9 +65,11 @@ defmodule Nadia.API do
   """
   def request(method, options \\ [], file_field \\ nil) do
     timeout = (Keyword.get(options, :timeout, 0) + recv_timeout) * 1000
+    {token, params} = filter_params(options)
+
     method
-    |> build_url
-    |> HTTPoison.post(build_request(options, file_field), [], recv_timeout: timeout)
+    |> build_url(token)
+    |> HTTPoison.post(build_request(params, file_field), [], recv_timeout: timeout)
     |> process_response(method)
   end
 end
