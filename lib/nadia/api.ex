@@ -45,12 +45,12 @@ defmodule Nadia.API do
     end
   end
 
-  defp filter_params(params) do
-    params = params
+  defp filter_params(options) do
+    token = Keyword.get(options, :telegram_bot_token, default_token)
+
+    params = options
     |> Keyword.update(:reply_markup, nil, &(Poison.encode!(&1)))
     |> Enum.filter_map(fn {k, v} -> k != :telegram_bot_token && v end, fn {k, v} -> {k, to_string(v) } end)
-
-    token = Keyword.get(params, :telegram_bot_token, default_token)
 
     {token, params}
   end
