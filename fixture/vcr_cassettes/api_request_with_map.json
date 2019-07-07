@@ -1,23 +1,22 @@
 [
   {
     "request": {
-      "body": "",
+      "body": "limit=4",
       "headers": [],
       "method": "post",
       "options": {
         "recv_timeout": 5000
       },
       "request_body": "",
-      "url": "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
+      "url": "https://api.telegram.org/bot<TOKEN>/getUpdates"
     },
     "response": {
-      "binary": false,
-      "body": "{\"ok\":true,\"result\":true,\"description\":\"Webhook is already deleted\"}",
+      "body": "{\"ok\":true,\"result\":[]}",
       "headers": {
-        "Server": "nginx/1.12.2",
-        "Date": "Thu, 26 Jul 2018 12:49:37 GMT",
+        "Server": "nginx/1.10.1",
+        "Date": "Mon, 16 Jan 2017 03:27:06 GMT",
         "Content-Type": "application/json",
-        "Content-Length": "68",
+        "Content-Length": "23",
         "Connection": "keep-alive",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",

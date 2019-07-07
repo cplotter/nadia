@@ -4,40 +4,80 @@ defmodule Nadia.API do
   """
 
   alias Nadia.Model.Error
+  alias Nadia.Config
 
-  @default_timeout 5
-  @base_url "https://api.telegram.org/bot"
-
-  defp default_token, do: Application.get_env(:nadia, :token)
-  defp recv_timeout, do: Application.get_env(:nadia, :recv_timeout, @default_timeout)
-
-  defp build_url(method, token), do: @base_url <> token <> "/" <> method
+  defp build_url(method, token), do: Config.base_url() <> token <> "/" <> method
 
   defp process_response(response, method) do
     case decode_response(response) do
       {:ok, true} -> :ok
+      {:ok, %{ok: false, description: description}} -> {:error, %Error{reason: description}}
       {:ok, result} -> {:ok, Nadia.Parser.parse_result(result, method)}
-      %{ok: false, description: description} -> {:error, %Error{reason: description}}
       {:error, %HTTPoison.Error{reason: reason}} -> {:error, %Error{reason: reason}}
+      {:error, error} -> {:error, %Error{reason: error}}
     end
   end
 
   defp decode_response(response) do
     with {:ok, %HTTPoison.Response{body: body}} <- response,
-          %{result: result} <- Poison.decode!(body, keys: :atoms),
-      do: {:ok, result}
+         {:ok, %{result: result}} <- Jason.decode(body, keys: :atoms),
+         do: {:ok, result}
   end
 
   defp build_multipart_request(params, file_field) do
     {file_path, params} = Keyword.pop(params, file_field)
     params = for {k, v} <- params, do: {to_string(k), v}
-    {:multipart, params ++ [
-      {:file, file_path,
-       {"form-data", [{"name", to_string(file_field)}, {"filename", file_path}]}, []}
-    ]}
+
+    {:multipart,
+     params ++
+       [
+         {:file, file_path,
+          {"form-data", [{"name", to_string(file_field)}, {"filename", file_path}]}, []}
+       ]}
   end
 
-  defp build_request(params, file_field) do
+  defp calculate_timeout(options) when is_list(options) do
+    (Keyword.get(options, :timeout, 0) + Config.recv_timeout()) * 1000
+  end
+
+  defp calculate_timeout(options) when is_map(options) do
+    (Map.get(options, :timeout, 0) + Config.recv_timeout()) * 1000
+  end
+
+  defp build_request(params, file_field) when is_list(params) do
+    token = Keyword.get(params, Config.token_key(), Config.token())
+
+    params =
+      params
+      |> Keyword.update(:reply_markup, nil, &Jason.encode!(&1))
+      |> Enum.filter_map(fn {k, v} -> k != Config.token_key() && v end, fn {k, v} ->
+        {k, to_string(v)}
+      end)
+      |> map_params(file_field)
+
+    {token, params}
+  end
+
+  defp build_request(params, file_field) when is_map(params) do
+    token = Map.get(params, Config.token_key(), Config.token())
+
+    params =
+      params
+      |> Map.update(:reply_markup, nil, &Jason.encode!(&1))
+      |> Enum.filter_map(fn {k, v} -> k != Config.token_key() && v end, fn {k, v} ->
+        {k, to_string(v)}
+      end)
+      |> map_params(file_field)
+
+    {token, params}
+  end
+
+  defp map_params(params, file_field) do
+    params =
+      params
+      |> Enum.filter(fn {_, v} -> v end)
+      |> Enum.map(fn {k, v} -> {k, to_string(v)} end)
+
     if !is_nil(file_field) and File.exists?(params[file_field]) do
       build_multipart_request(params, file_field)
     else
@@ -45,14 +85,39 @@ defmodule Nadia.API do
     end
   end
 
-  defp filter_params(options) do
-    token = Keyword.get(options, :telegram_bot_token, default_token)
+  defp build_options(options) do
+    timeout = calculate_timeout(options)
+    opts = [recv_timeout: timeout]
 
-    params = options
-    |> Keyword.update(:reply_markup, nil, &(Poison.encode!(&1)))
-    |> Enum.filter_map(fn {k, v} -> k != :telegram_bot_token && v end, fn {k, v} -> {k, to_string(v) } end)
+    opts =
+      case Config.proxy() do
+        proxy when byte_size(proxy) > 0 -> Keyword.put(opts, :proxy, proxy)
+        proxy when is_tuple(proxy) and tuple_size(proxy) == 3 -> Keyword.put(opts, :proxy, proxy)
+        _ -> opts
+      end
 
-    {token, params}
+    opts =
+      case Config.proxy_auth() do
+        proxy_auth when is_tuple(proxy_auth) and tuple_size(proxy_auth) == 2 ->
+          Keyword.put(opts, :proxy_auth, proxy_auth)
+
+        _ ->
+          opts
+      end
+
+    opts =
+      case Config.socks5_user() do
+        socks5_user when byte_size(socks5_user) > 0 ->
+          Keyword.put(opts, :socks5_user, socks5_user)
+
+        _ ->
+          opts
+      end
+
+    case Config.socks5_pass() do
+      socks5_pass when byte_size(socks5_pass) > 0 -> Keyword.put(opts, :socks5_pass, socks5_pass)
+      _ -> opts
+    end
   end
 
   @doc """
@@ -63,13 +128,29 @@ defmodule Nadia.API do
   * `options` - orddict of options
   * `file_field` - specify the key of file_field in `options` when sending files
   """
+  @spec request(binary, [{atom, any}], atom) :: :ok | {:error, Error.t()} | {:ok, any}
   def request(method, options \\ [], file_field \\ nil) do
-    timeout = (Keyword.get(options, :timeout, 0) + recv_timeout) * 1000
-    {token, params} = filter_params(options)
+    {token, params} = build_request(options, file_field)
 
     method
     |> build_url(token)
-    |> HTTPoison.post(build_request(params, file_field), [], recv_timeout: timeout)
+    |> HTTPoison.post(params, [], build_options(options))
     |> process_response(method)
+  end
+
+  def request?(method, options \\ [], file_field \\ nil) do
+    {_, response} = request(method, options, file_field)
+    response
+  end
+
+  @doc ~S"""
+  Use this function to build file url.
+
+  iex> Nadia.API.build_file_url("test_token", "document/file_10")
+  "https://api.telegram.org/file/bot#{"test_token"}/document/file_10"
+  """
+  @spec build_file_url(binary, binary) :: binary
+  def build_file_url(token, file_path) do
+    Config.file_base_url() <> token <> "/" <> file_path
   end
 end

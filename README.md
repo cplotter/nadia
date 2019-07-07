@@ -1,4 +1,4 @@
-Nadia [![Build Status](https://travis-ci.org/zhyu/nadia.svg?branch=master)](https://travis-ci.org/zhyu/nadia) [![Deps Status](https://beta.hexfaktor.org/badge/all/github/zhyu/nadia.svg)](https://beta.hexfaktor.org/github/zhyu/nadia) [![Inline docs](http://inch-ci.org/github/zhyu/nadia.svg)](http://inch-ci.org/github/zhyu/nadia) [![Hex pm](https://img.shields.io/hexpm/v/nadia.svg)](https://hex.pm/packages/nadia) [![Hex.pm](https://img.shields.io/hexpm/dt/nadia.svg)](https://hex.pm/packages/nadia)
+Nadia [![Build Status](https://travis-ci.org/zhyu/nadia.svg?branch=master)](https://travis-ci.org/zhyu/nadia) [![Inline docs](http://inch-ci.org/github/zhyu/nadia.svg)](http://inch-ci.org/github/zhyu/nadia) [![Hex pm](https://img.shields.io/hexpm/v/nadia.svg)](https://hex.pm/packages/nadia) [![Hex.pm](https://img.shields.io/hexpm/dt/nadia.svg)](https://hex.pm/packages/nadia)
 =====
 
 Telegram Bot API Wrapper written in Elixir ([document](https://hexdocs.pm/nadia/))
@@ -8,7 +8,7 @@ Add Nadia to your `mix.exs` dependencies:
 
 ```elixir
 def deps do
-  [{:nadia, "~> 0.4"}]
+  [{:nadia, "~> 0.5.0"}]
 end
 ```
 and run `$ mix deps.get`.
@@ -26,6 +26,33 @@ You can also add an optional recv_timeout in seconds (defaults to 5s).
 ```elixir
 config :nadia,
   recv_timeout: 10
+```
+
+You can also add a proxy support.
+```elixir
+config :nadia,
+  proxy: "http://proxy_url:proxy_port",
+  proxy_auth: {"user", "password"},
+  ssl: [versions: [:'tlsv1.2']]
+```
+
+You can also configure the the base url for the api if you need to for some
+reason.
+
+```elixir
+config :nadia,
+  # Telegram API. Default: https://api.telegram.org/bot
+  base_url: "http://my-own-endpoint.com/whatever/",
+
+  # Telegram Graph API. Default: https://api.telegra.ph
+  graph_base_url: "http://my-own-endpoint.com/whatever/"
+```
+
+Environment variables may be used as well:
+
+```elixir
+config :nadia,
+  token: {:system, "ENVVAR_WITH_MYAPP_TOKEN", "default_value_if_needed"}
 ```
 
 And then, in `mix.exs`, list `:nadia` as an application inside `application/0`:

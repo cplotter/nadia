@@ -6,17 +6,17 @@ defmodule Nadia do
   https://core.telegram.org/bots/api#available-methods
   """
 
-  alias Nadia.Model.{User, Message, Update, UserProfilePhotos, File, Error}
+  alias Nadia.Model.{User, Message, Update, UserProfilePhotos, File, Error, WebhookInfo}
 
   import Nadia.API
 
-  @base_file_url "https://api.telegram.org/file/bot"
+  @behaviour Nadia.Behaviour
 
   @doc """
   A simple method for testing your bot's auth token. Requires no parameters.
   Returns basic information about the bot in form of a User object.
   """
-  @spec get_me :: {:ok, User.t} | {:error, Error.t}
+  @spec get_me :: {:ok, User.t()} | {:error, Error.t()}
   def get_me, do: request("getMe")
 
   @doc """
@@ -37,9 +37,9 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_message(integer, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_message(integer, binary, [{atom, any}]) :: {:ok, Message.t()} | {:error, Error.t()}
   def send_message(chat_id, text, options \\ []) do
     request("sendMessage", [chat_id: chat_id, text: text] ++ options)
   end
@@ -56,9 +56,14 @@ defmodule Nadia do
   * `:disable_notification` - Sends the message silently or without notification
   * `message_id` - Unique message identifier
   """
-  @spec forward_message(integer, integer, integer) :: {:ok, Message.t} | {:error, Error.t}
+  @spec forward_message(integer, integer, integer) :: {:ok, Message.t()} | {:error, Error.t()}
   def forward_message(chat_id, from_chat_id, message_id) do
-    request("forwardMessage", chat_id: chat_id, from_chat_id: from_chat_id, message_id: message_id)
+    request(
+      "forwardMessage",
+      chat_id: chat_id,
+      from_chat_id: from_chat_id,
+      message_id: message_id
+    )
   end
 
   @doc """
@@ -78,9 +83,9 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_photo(integer, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_photo(integer, binary, [{atom, any}]) :: {:ok, Message.t()} | {:error, Error.t()}
   def send_photo(chat_id, photo, options \\ []) do
     request("sendPhoto", [chat_id: chat_id, photo: photo] ++ options, :photo)
   end
@@ -113,9 +118,9 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_audio(integer, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_audio(integer, binary, [{atom, any}]) :: {:ok, Message.t()} | {:error, Error.t()}
   def send_audio(chat_id, audio, options \\ []) do
     request("sendAudio", [chat_id: chat_id, audio: audio] ++ options, :audio)
   end
@@ -138,9 +143,9 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_document(integer, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_document(integer, binary, [{atom, any}]) :: {:ok, Message.t()} | {:error, Error.t()}
   def send_document(chat_id, document, options \\ []) do
     request("sendDocument", [chat_id: chat_id, document: document] ++ options, :document)
   end
@@ -161,9 +166,9 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_sticker(integer, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_sticker(integer, binary, [{atom, any}]) :: {:ok, Message.t()} | {:error, Error.t()}
   def send_sticker(chat_id, sticker, options \\ []) do
     request("sendSticker", [chat_id: chat_id, sticker: sticker] ++ options, :sticker)
   end
@@ -189,9 +194,9 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_video(integer, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_video(integer, binary, [{atom, any}]) :: {:ok, Message.t()} | {:error, Error.t()}
   def send_video(chat_id, video, options \\ []) do
     request("sendVideo", [chat_id: chat_id, video: video] ++ options, :video)
   end
@@ -217,9 +222,9 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_voice(integer, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_voice(integer, binary, [{atom, any}]) :: {:ok, Message.t()} | {:error, Error.t()}
   def send_voice(chat_id, voice, options \\ []) do
     request("sendVoice", [chat_id: chat_id, voice: voice] ++ options, :voice)
   end
@@ -240,11 +245,15 @@ defmodule Nadia do
   * `:reply_to_message_id` - If the message is a reply, ID of the original message
   * `:reply_markup` - Additional interface options. Instructions to hide keyboard or to
   force a reply from the user - `Nadia.Model.ReplyKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardHide` or `Nadia.Model.ForceReply`
+  `Nadia.Model.ReplyKeyboardRemove` or `Nadia.Model.ForceReply`
   """
-  @spec send_location(integer, float, float, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_location(integer, float, float, [{atom, any}]) ::
+          {:ok, Message.t()} | {:error, Error.t()}
   def send_location(chat_id, latitude, longitude, options \\ []) do
-    request("sendLocation", [chat_id: chat_id, latitude: latitude, longitude: longitude] ++ options)
+    request(
+      "sendLocation",
+      [chat_id: chat_id, latitude: latitude, longitude: longitude] ++ options
+    )
   end
 
   @doc """
@@ -267,12 +276,17 @@ defmodule Nadia do
   * `:reply_markup` - Additional interface options. A JSON-serialized object for
   an inline keyboard, custom reply keyboard, instructions to hide reply keyboard
   or to force a reply from the user. - `Nadia.Model.InlineKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardMarkup` or `Nadia.Model.ReplyKeyboardHide` or
+  `Nadia.Model.ReplyKeyboardMarkup` or `Nadia.Model.ReplyKeyboardRemove` or
   `Nadia.Model.ForceReply`
   """
-  @spec send_venue(integer, float, float, binary, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_venue(integer, float, float, binary, binary, [{atom, any}]) ::
+          {:ok, Message.t()} | {:error, Error.t()}
   def send_venue(chat_id, latitude, longitude, title, address, options \\ []) do
-    request("sendVenue", [chat_id: chat_id, latitude: latitude, longitude: longitude, title: title, address: address] ++ options)
+    request(
+      "sendVenue",
+      [chat_id: chat_id, latitude: latitude, longitude: longitude, title: title, address: address] ++
+        options
+    )
   end
 
   @doc """
@@ -293,12 +307,16 @@ defmodule Nadia do
   * `:reply_markup` - Additional interface options. A JSON-serialized object for
   an inline keyboard, custom reply keyboard, instructions to hide reply keyboard
   or to force a reply from the user. - `Nadia.Model.InlineKeyboardMarkup` or
-  `Nadia.Model.ReplyKeyboardMarkup` or `Nadia.Model.ReplyKeyboardHide` or
+  `Nadia.Model.ReplyKeyboardMarkup` or `Nadia.Model.ReplyKeyboardRemove` or
   `Nadia.Model.ForceReply`
   """
-  @spec send_contact(integer, binary, binary, [{atom, any}]) :: {:ok, Message.t} | {:error, Error.t}
+  @spec send_contact(integer, binary, binary, [{atom, any}]) ::
+          {:ok, Message.t()} | {:error, Error.t()}
   def send_contact(chat_id, phone_number, first_name, options \\ []) do
-    request("sendContact", [chat_id: chat_id, phone_number: phone_number, first_name: first_name] ++ options)
+    request(
+      "sendContact",
+      [chat_id: chat_id, phone_number: phone_number, first_name: first_name] ++ options
+    )
   end
 
   @doc """
@@ -318,7 +336,7 @@ defmodule Nadia do
       * `upload_document` for general files
       * `find_location` for location data
   """
-  @spec send_chat_action(integer, binary) :: :ok | {:error, Error.t}
+  @spec send_chat_action(integer, binary) :: :ok | {:error, Error.t()}
   def send_chat_action(chat_id, action) do
     request("sendChatAction", chat_id: chat_id, action: action)
   end
@@ -337,7 +355,8 @@ defmodule Nadia do
   * `:limit` - Limits the number of photos to be retrieved. Values between 1—100 are
   accepted. Defaults to 100
   """
-  @spec get_user_profile_photos(integer, [{atom, any}]) :: {:ok, UserProfilePhotos.t} | {:error, Error.t}
+  @spec get_user_profile_photos(integer, [{atom, any}]) ::
+          {:ok, UserProfilePhotos.t()} | {:error, Error.t()}
   def get_user_profile_photos(user_id, options \\ []) do
     request("getUserProfilePhotos", [user_id: user_id] ++ options)
   end
@@ -355,12 +374,12 @@ defmodule Nadia do
   updates starting with the earliest unconfirmed update are returned. An update is
   considered confirmed as soon as `get_updates` is called with an `offset` higher than
   its `update_id`.
-  * `:limit` - Limits the number of photos to be retrieved. Values between 1—100 are
+  * `:limit` - Limits the number of updates to be retrieved. Values between 1—100 are
   accepted. Defaults to 100
   * `:timeout` - Timeout in seconds for long polling. Defaults to 0, i.e. usual short
   polling
   """
-  @spec get_updates([{atom, any}]) :: {:ok, [Update.t]} | {:error, Error.t}
+  @spec get_updates([{atom, any}]) :: {:ok, [Update.t()]} | {:error, Error.t()}
   def get_updates(options \\ []), do: request("getUpdates", options)
 
   @doc """
@@ -373,11 +392,27 @@ defmodule Nadia do
   * `options` - orddict of options
 
   Options:
-  * `:url` - HTTPS url to send updates to. Use an empty string to remove webhook
-  integration
+  * `:url` - HTTPS url to send updates to.
   """
-  @spec set_webhook([{atom, any}]) :: :ok | {:error, Error.t}
+  @spec set_webhook([{atom, any}]) :: :ok | {:error, Error.t()}
   def set_webhook(options \\ []), do: request("setWebhook", options)
+
+  @doc """
+  Use this method to remove webhook integration if you decide to switch back to `Nadia.get_updates/1`.
+  Returns `:ok` on success.
+
+  Requires no parameters.
+  """
+  @spec delete_webhook() :: :ok | {:error, Error.t()}
+  def delete_webhook(), do: request("deleteWebhook")
+
+  @doc """
+  Use this method to get current webhook status. Requires no parameters.
+  On success, returns a `Nadia.Model.WebhookInfo.t()` object with webhook details.
+  If the bot is using getUpdates, will return an object with the url field empty.
+  """
+  @spec get_webhook_info() :: {:ok, WebhookInfo.t()} | {:error, Error.t()}
+  def get_webhook_info(), do: request("getWebhookInfo")
 
   @doc """
   Use this method to get basic info about a file and prepare it for downloading.
@@ -391,23 +426,22 @@ defmodule Nadia do
   Args:
   * `file_id` - File identifier to get info about
   """
-  @spec get_file(binary) :: {:ok, File.t} | {:error, Error.t}
+  @spec get_file(binary) :: {:ok, File.t()} | {:error, Error.t()}
   def get_file(file_id), do: request("getFile", file_id: file_id)
 
   @doc ~S"""
   Use this method to get link for file for subsequent use.
   This method is an extension of the `get_file` method.
 
-      iex> Nadia.get_file_link(%Nadia.Model.File{file_id: "BQADBQADBgADmEjsA1aqdSxtzvvVAg",
+      iex> Nadia.get_file_link(token, %Nadia.Model.File{file_id: "BQADBQADBgADmEjsA1aqdSxtzvvVAg",
       ...> file_path: "document/file_10", file_size: 17680})
       {:ok,
-      "https://api.telegram.org/file/bot#{Application.get_env(:nadia, :token)}/document/file_10"}
+      "https://api.telegram.org/file/bot#{token}/document/file_10"}
 
   """
-  @spec get_file_link(File.t) :: {:ok, binary} | {:error, Error.t}
-  def get_file_link(file) do
-    token = Application.get_env(:nadia, :token)
-    {:ok, @base_file_url <> token <> "/" <> file.file_path}
+  @spec get_file_link(binary, File.t()) :: {:ok, binary} | {:error, Error.t()}
+  def get_file_link(token, file) do
+    {:ok, build_file_url(token, file.file_path)}
   end
 
   @doc """
@@ -425,7 +459,7 @@ defmodule Nadia do
   (in the format @supergroupusername)
   * `user_id` - Unique identifier of the target user
   """
-  @spec kick_chat_member(integer | binary, integer) :: :ok | {:error, Error.t}
+  @spec kick_chat_member(integer | binary, integer) :: :ok | {:error, Error.t()}
   def kick_chat_member(chat_id, user_id) do
     request("kickChatMember", chat_id: chat_id, user_id: user_id)
   end
@@ -438,7 +472,7 @@ defmodule Nadia do
   * `chat_id` - Unique identifier for the target chat or username of the target supergroup or
   channel (in the format @supergroupusername)
   """
-  @spec leave_chat(integer | binary) :: :ok | {:error, Error.t}
+  @spec leave_chat(integer | binary) :: :ok | {:error, Error.t()}
   def leave_chat(chat_id) do
     request("leaveChat", chat_id: chat_id)
   end
@@ -453,7 +487,7 @@ defmodule Nadia do
   (in the format @supergroupusername)
   * `user_id` - Unique identifier of the target user
   """
-  @spec unban_chat_member(integer | binary, integer) :: :ok | {:error, Error.t}
+  @spec unban_chat_member(integer | binary, integer) :: :ok | {:error, Error.t()}
   def unban_chat_member(chat_id, user_id) do
     request("unbanChatMember", chat_id: chat_id, user_id: user_id)
   end
@@ -467,7 +501,7 @@ defmodule Nadia do
   * `chat_id` - Unique identifier for the target chat or username of the target supergroup or
   channel (in the format @supergroupusername)
   """
-  @spec get_chat(integer | binary) :: {:ok, Chat.t} | {:error, Error.t}
+  @spec get_chat(integer | binary) :: {:ok, Chat.t()} | {:error, Error.t()}
   def get_chat(chat_id) do
     request("getChat", chat_id: chat_id)
   end
@@ -482,7 +516,7 @@ defmodule Nadia do
   * `chat_id` - Unique identifier for the target chat or username of the target supergroup or
   channel (in the format @channelusername)
   """
-  @spec get_chat_administrators(integer | binary) :: {:ok, [ChatMember.t]} | {:error, Error.t}
+  @spec get_chat_administrators(integer | binary) :: {:ok, [ChatMember.t()]} | {:error, Error.t()}
   def get_chat_administrators(chat_id) do
     request("getChatAdministrators", chat_id: chat_id)
   end
@@ -494,7 +528,7 @@ defmodule Nadia do
   * `chat_id` - Unique identifier for the target chat or username of the target supergroup or
   channel (in the format @channelusername)
   """
-  @spec get_chat_members_count(integer | binary) :: {:ok, integer} | {:error, Error.t}
+  @spec get_chat_members_count(integer | binary) :: {:ok, integer} | {:error, Error.t()}
   def get_chat_members_count(chat_id) do
     request("getChatMembersCount", chat_id: chat_id)
   end
@@ -508,11 +542,11 @@ defmodule Nadia do
   channel (in the format @channelusername)
   * `user_id` - Unique identifier of the target user
   """
-  @spec get_chat_member(integer | binary, integer) :: {:ok, ChatMember.t} | {:error, Error.t}
+  @spec get_chat_member(integer | binary, integer) :: {:ok, ChatMember.t()} | {:error, Error.t()}
   def get_chat_member(chat_id, user_id) do
     request("getChatMember", chat_id: chat_id, user_id: user_id)
   end
-  
+
   @doc """
   Use this method to send answers to callback queries sent from inline keyboards.
   The answer will be displayed to the user as a notification at the top of the chat
@@ -528,7 +562,7 @@ defmodule Nadia do
   * `:show_alert` - If true, an alert will be shown by the client instead of a
   notification at the top of the chat screen. Defaults to false.
   """
-  @spec answer_callback_query(binary, [{atom, any}]) :: :ok | {:error, Error.t}
+  @spec answer_callback_query(binary, [{atom, any}]) :: :ok | {:error, Error.t()}
   def answer_callback_query(callback_query_id, options \\ []) do
     request("answerCallbackQuery", [callback_query_id: callback_query_id] ++ options)
   end
@@ -554,9 +588,34 @@ defmodule Nadia do
   * `:reply_markup`	- A JSON-serialized object for an inline
   keyboard - `Nadia.Model.InlineKeyboardMarkup`
   """
-  @spec edit_message_text(integer | binary, integer, binary, [{atom, any}])  :: {:ok, Message.t} | {:error, Error.t}
+  @spec edit_message_text(integer | binary, integer, binary, binary, [{atom, any}]) ::
+          {:ok, Message.t()} | {:error, Error.t()}
   def edit_message_text(chat_id, message_id, inline_message_id, text, options \\ []) do
-    request("editMessageText", [chat_id: chat_id, message_id: message_id, inline_message_id: inline_message_id, text: text] ++ options)
+    request(
+      "editMessageText",
+      [chat_id: chat_id, message_id: message_id, inline_message_id: inline_message_id, text: text] ++
+        options
+    )
+  end
+
+  @doc """
+  Use this method to delete message from a chat.
+  Bot should have admin permission to do that, and remember you can't delete messages that are more than
+  48 hours old.
+
+  Args:
+  * `chat_id` - Unique identifier for the target chat or username of the target channel
+  (in the format @channelusername)
+  * `message_id` - Required if inline_message_id is not specified. Unique identifier of
+  the sent message
+  """
+  @spec delete_message(integer | binary, integer) :: :ok | {:error, Error.t()}
+  def delete_message(chat_id, message_id) do
+    request(
+      "deleteMessage",
+      chat_id: chat_id,
+      message_id: message_id
+    )
   end
 
   @doc """
@@ -577,9 +636,13 @@ defmodule Nadia do
   * `:reply_markup`	- A JSON-serialized object for an inline
   keyboard - `Nadia.Model.InlineKeyboardMarkup`
   """
-  @spec edit_message_caption(integer | binary, integer, binary, [{atom, any}])  :: {:ok, Message.t} | {:error, Error.t}
+  @spec edit_message_caption(integer | binary, integer, binary, [{atom, any}]) ::
+          {:ok, Message.t()} | {:error, Error.t()}
   def edit_message_caption(chat_id, message_id, inline_message_id, options \\ []) do
-    request("editMessageCaption", [chat_id: chat_id, message_id: message_id, inline_message_id: inline_message_id] ++ options)
+    request(
+      "editMessageCaption",
+      [chat_id: chat_id, message_id: message_id, inline_message_id: inline_message_id] ++ options
+    )
   end
 
   @doc """
@@ -599,9 +662,13 @@ defmodule Nadia do
   * `:reply_markup`	- A JSON-serialized object for an inline
   keyboard - `Nadia.Model.InlineKeyboardMarkup`
   """
-  @spec edit_message_reply_markup(integer | binary, integer, binary, [{atom, any}])  :: {:ok, Message.t} | {:error, Error.t}
+  @spec edit_message_reply_markup(integer | binary, integer, binary, [{atom, any}]) ::
+          {:ok, Message.t()} | {:error, Error.t()}
   def edit_message_reply_markup(chat_id, message_id, inline_message_id, options \\ []) do
-    request("editMessageReplyMarkup", [chat_id: chat_id, message_id: message_id, inline_message_id: inline_message_id] ++ options)
+    request(
+      "editMessageReplyMarkup",
+      [chat_id: chat_id, message_id: message_id, inline_message_id: inline_message_id] ++ options
+    )
   end
 
   @doc """
@@ -628,15 +695,132 @@ defmodule Nadia do
   * `switch_pm_parameter` - Parameter for the start message sent to the bot when user
   presses the switch button.
   """
-  @spec answer_inline_query(binary, [Nadia.Model.InlineQueryResult.t], [{atom, any}]) :: :ok | {:error, Error.t}
+  @spec answer_inline_query(binary, [Nadia.Model.InlineQueryResult.t()], [{atom, any}]) ::
+          :ok | {:error, Error.t()}
   def answer_inline_query(inline_query_id, results, options \\ []) do
-    encoded_results = results
-    |> Enum.map(fn result ->
-         for {k, v} <- Map.from_struct(result), v != nil, into: %{}, do: {k, v}
-       end)
-    |> Poison.encode!
+    encoded_results =
+      results
+      |> Enum.map(fn result ->
+        for {k, v} <- Map.from_struct(result), v != nil, into: %{}, do: {k, v}
+      end)
+      |> Jason.encode!()
+
     args = [inline_query_id: inline_query_id, results: encoded_results]
 
     request("answerInlineQuery", args ++ options)
+  end
+
+  @doc """
+  Use this method to get a sticker set. On success, a StickerSet object is returned.
+
+  Args:
+  * `name` - Name of the sticker set
+  """
+  @spec get_sticker_set(binary) :: {:ok, Nadia.Model.StickerSet.t()} | {:error, Error.t()}
+  def get_sticker_set(name) do
+    request("getStickerSet", name: name)
+  end
+
+  @doc """
+  Use this method to upload a .png file with a sticker for later use in
+  createNewStickerSet and addStickerToSet methods (can be used multiple times).
+  Returns the uploaded File on success.
+
+  Args:
+  * `user_id` - User identifier of sticker file owner
+  * `png_sticker` - Png image with the sticker, must be up to 512 kilobytes in size,
+  dimensions must not exceed 512px, and either width or height must be exactly 512px.
+  Either a `file_id` to resend a file that is already on the Telegram servers,
+  or a `file_path` to upload a new file from local, or a `HTTP URL` to get a file
+  from the internet.
+  """
+  @spec upload_sticker_file(integer, binary) :: {:ok, File.t()} | {:error, Error.t()}
+  def upload_sticker_file(user_id, png_sticker) do
+    request("uploadStickerFile", [user_id: user_id, png_sticker: png_sticker], :png_sticker)
+  end
+
+  @doc """
+  Use this method to create new sticker set owned by a user. The bot will be able to
+  edit the created sticker set. Returns True on success.
+
+  Args:
+  * `user_id` - User identifier of created sticker set owner
+  * `name` - Short name of sticker set, to be used in t.me/addstickers/ URLs (e.g., animals).
+  Can contain only english letters, digits and underscores. Must begin with a letter,
+  can't contain consecutive underscores and must end in “_by_<bot username>”. <bot_username>
+  is case insensitive. 1-64 characters.
+  * `title` - Sticker set title, 1-64 characters
+  * `png_sticker` - Png image with the sticker, must be up to 512 kilobytes in size,
+  dimensions must not exceed 512px, and either width or height must be exactly 512px.
+  Either a `file_id` to resend a file that is already on the Telegram servers,
+  or a `file_path` to upload a new file from local, or a `HTTP URL` to get a file
+  from the internet.
+  * `emojis` - One or more emoji corresponding to the sticker
+
+  Options:
+  * `contains_masks` - Pass True, if a set of mask stickers should be created
+  * `mask_position` - A `Nadia.Model.MaskPosition` object for position where the mask
+  should be placed on faces
+  """
+  @spec create_new_sticker_set(integer, binary, binary, binary, binary, [{atom, any}]) ::
+          :ok | {:error, Error.t()}
+  def create_new_sticker_set(user_id, name, title, png_sticker, emojis, options \\ []) do
+    request(
+      "createNewStickerSet",
+      [user_id: user_id, name: name, title: title, png_sticker: png_sticker, emojis: emojis] ++
+        options,
+      :png_sticker
+    )
+  end
+
+  @doc """
+  Use this method to add a new sticker to a set created by the bot. Returns True on success.
+
+  Args:
+  * `user_id` - User identifier of created sticker set owner
+  * `name` - Sticker set name
+  * `png_sticker` - Png image with the sticker, must be up to 512 kilobytes in size,
+  dimensions must not exceed 512px, and either width or height must be exactly 512px.
+  Either a `file_id` to resend a file that is already on the Telegram servers,
+  or a `file_path` to upload a new file from local, or a `HTTP URL` to get a file
+  from the internet.
+  * `emojis` - One or more emoji corresponding to the sticker
+
+  Options:
+  * `mask_position` - A `Nadia.Model.MaskPosition` object for position where the mask
+  should be placed on faces
+  """
+  @spec add_sticker_to_set(integer, binary, binary, binary, [{atom, any}]) ::
+          :ok | {:error, Error.t()}
+  def add_sticker_to_set(user_id, name, png_sticker, emojis, options \\ []) do
+    request(
+      "addStickerToSet",
+      [user_id: user_id, name: name, png_sticker: png_sticker, emojis: emojis] ++ options,
+      :png_sticker
+    )
+  end
+
+  @doc """
+  Use this method to move a sticker in a set created by the bot to a specific position.
+  Returns True on success.
+
+  Args:
+  * `sticker` - File identifier of the sticker
+  * `position` - New sticker position in the set, zero-based
+  """
+  @spec set_sticker_position_in_set(binary, integer) :: :ok | {:error, Error.t()}
+  def set_sticker_position_in_set(sticker, position) do
+    request("setStickerPositionInSet", sticker: sticker, position: position)
+  end
+
+  @doc """
+  Use this method to delete a sticker from a set created by the bot. Returns True on success.
+
+  Args:
+  * `sticker` - File identifier of the sticker
+  """
+  @spec delete_sticker_from_set(binary) :: :ok | {:error, Error.t()}
+  def delete_sticker_from_set(sticker) do
+    request("deleteStickerFromSet", sticker: sticker)
   end
 end
